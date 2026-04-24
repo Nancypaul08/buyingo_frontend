@@ -25,6 +25,9 @@ const theme = createTheme({
   typography: {
     fontFamily: 'sans-serif',
     button: { textTransform: 'none', fontWeight: 700 },
+    h4: { fontSize: 'clamp(1.3rem, 4vw, 2rem)' },
+    h5: { fontSize: 'clamp(1.1rem, 3.5vw, 1.5rem)' },
+    h6: { fontSize: 'clamp(1rem, 3vw, 1.25rem)' },
   },
   shape: { borderRadius: 10 },
   palette: {
@@ -36,17 +39,21 @@ const theme = createTheme({
   components: {
     MuiButton: {
       styleOverrides: {
-        root: { borderRadius: 10, fontWeight: 700, textTransform: 'none' },
+        root: { borderRadius: 10, fontWeight: 700, textTransform: 'none', minHeight: 44 },
       },
     },
-    MuiCard: {
-      styleOverrides: { root: { borderRadius: 14 } },
+    MuiCard: { styleOverrides: { root: { borderRadius: 14 } } },
+    MuiPaper: { styleOverrides: { root: { borderRadius: 14 } } },
+    MuiChip: { styleOverrides: { root: { fontWeight: 600 } } },
+    MuiTextField: {
+      styleOverrides: {
+        root: { '& .MuiInputBase-root': { fontSize: '1rem' } },
+      },
     },
-    MuiPaper: {
-      styleOverrides: { root: { borderRadius: 14 } },
-    },
-    MuiChip: {
-      styleOverrides: { root: { fontWeight: 600 } },
+    MuiContainer: {
+      styleOverrides: {
+        root: { paddingLeft: '16px', paddingRight: '16px' },
+      },
     },
   },
 });

@@ -1,62 +1,108 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Container, Typography, Grid, Card, CardContent, CardMedia,
-  Button, Box, Chip, Paper, Dialog, DialogTitle, DialogContent,
-  DialogActions, IconButton, Snackbar, Alert,
+  Container, Typography, Card, CardContent, CardMedia,
+  Button, Box, Chip, Paper, IconButton, Snackbar, Alert,
+  CircularProgress, Grid,
 } from '@mui/material';
 import {
-  ShoppingCart, VerifiedUser as VerifiedUserIcon,
-  Security as SecurityIcon, LocalOffer as LocalOfferIcon,
-  Close, StorefrontOutlined, ArrowForward, Star,
-  CheckCircleOutline,
+  ShoppingCart, StorefrontOutlined, ArrowForward,
+  Star, CheckCircleOutline, ChevronLeft, ChevronRight,
+  VerifiedUser as VerifiedUserIcon, Security as SecurityIcon,
+  LocalOffer as LocalOfferIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api, { getImageUrl } from '../services/api';
 
-const TRUST = [
-  { icon: <VerifiedUserIcon sx={{ fontSize: 32, color: 'white' }} />, title: '100% Verified Students', desc: 'Only verified college students can buy and sell, ensuring a trusted community.', color: '#10B981', check: 'College Verified' },
-  { icon: <SecurityIcon sx={{ fontSize: 32, color: 'white' }} />, title: 'Reliable & Secure', desc: 'Advanced security measures protect your data and payments at every step.', color: '#4F46E5', check: 'Real-time Updates' },
-  { icon: <LocalOfferIcon sx={{ fontSize: 32, color: 'white' }} />, title: 'Unbeatable Prices', desc: 'Find the best deals from fellow students and save money on quality items.', color: '#8B5CF6', check: 'Budget Friendly' },
+const NO_IMG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRUVGMkZGIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOEI1Q0Y2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';
+
+// Banner slides — rich gradient designs with icons
+const BANNERS = [
+  {
+    bg: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+    accent: '#4F46E5',
+    tag: 'Summer Deal',
+    title: 'Air Coolers',
+    sub: 'Beat the heat this summer',
+    price: 'From ₹499',
+    emoji: '❄️',
+    category: 'Air Cooler',
+    cta: 'Shop Now',
+    pattern: 'radial-gradient(circle at 80% 50%, rgba(79,70,229,0.3) 0%, transparent 60%)',
+  },
+  {
+    bg: 'linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%)',
+    accent: '#10B981',
+    tag: 'Best Seller',
+    title: 'Mattresses',
+    sub: 'Sleep better every night',
+    price: 'From ₹799',
+    emoji: '🛏️',
+    category: 'Mattresses',
+    cta: 'Explore',
+    pattern: 'radial-gradient(circle at 80% 50%, rgba(16,185,129,0.25) 0%, transparent 60%)',
+  },
+  {
+    bg: 'linear-gradient(135deg, #1a0533 0%, #2d1b69 50%, #11998e 100%)',
+    accent: '#F59E0B',
+    tag: 'New Arrival',
+    title: 'LED Lights',
+    sub: 'Brighten up your room',
+    price: 'From ₹99',
+    emoji: '💡',
+    category: 'LED Lights',
+    cta: 'Buy Now',
+    pattern: 'radial-gradient(circle at 80% 50%, rgba(245,158,11,0.25) 0%, transparent 60%)',
+  },
+  {
+    bg: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+    accent: '#EC4899',
+    tag: 'Top Pick',
+    title: 'Routers & WiFi',
+    sub: 'Stay connected always',
+    price: 'From ₹299',
+    emoji: '📡',
+    category: 'Routers',
+    cta: 'View All',
+    pattern: 'radial-gradient(circle at 80% 50%, rgba(236,72,153,0.25) 0%, transparent 60%)',
+  },
+];
+
+const CATEGORIES = [
+  { name: 'All', image: null },
+  { name: 'Air Cooler', image: '/images/categories/cooler.jpeg' },
+  { name: 'Water Bottles', image: '/images/categories/bottle.jpeg' },
+  { name: 'Coffee Mugs', image: '/images/categories/cup.jpeg' },
+  { name: 'Buckets', image: '/images/categories/bucket.jpeg' },
+  { name: 'Pillows', image: '/images/categories/pillow.jpeg' },
+  { name: 'LED Lights', image: '/images/categories/led.jpeg' },
+  { name: 'Routers', image: '/images/categories/router.jpeg' },
+  { name: 'Mattresses', image: '/images/categories/mattress.jpeg' },
+  { name: 'Formal Suits', image: '/images/categories/formals.jpeg' },
+  { name: 'Formal Shoes', image: '/images/categories/formalShoes.jpeg' },
+  { name: 'Hangers', image: '/images/categories/hanger.jpeg' },
+  { name: 'Soft Toys', image: '/images/categories/softToy.jpeg' },
 ];
 
 const Home = () => {
   const navigate = useNavigate();
   const [allProducts, setAllProducts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [popupOpen, setPopupOpen] = useState(false);
-  const [selectedCategoryData, setSelectedCategoryData] = useState(null);
+  const [bannerIdx, setBannerIdx] = useState(0);
+  const [activeCategory, setActiveCategory] = useState('All');
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+  const bannerTimer = useRef(null);
 
+  // Auto-slide banner every 4s
   useEffect(() => {
-    fetchProducts();
-    fetchFeaturedProducts();
-    setCategories([
-      { name: 'Air Cooler', image: '/images/categories/cooler.jpeg' },
-      { name: 'Water Bottles', image: '/images/categories/bottle.jpeg' },
-      { name: 'Coffee Mugs', image: '/images/categories/cup.jpeg' },
-      { name: 'Buckets', image: '/images/categories/bucket.jpeg' },
-      { name: 'Pillows', image: '/images/categories/pillow.jpeg' },
-      { name: 'LED Lights', image: '/images/categories/led.jpeg' },
-      { name: 'Routers', image: '/images/categories/router.jpeg' },
-      { name: 'Mattresses', image: '/images/categories/mattress.jpeg' },
-      { name: 'Formal Suits', image: '/images/categories/formals.jpeg' },
-      { name: 'Formal Shoes', image: '/images/categories/formalShoes.jpeg' },
-      { name: 'Hangers', image: '/images/categories/hanger.jpeg' },
-      { name: 'Soft Toys', image: '/images/categories/softToy.jpeg' },
-    ]);
+    bannerTimer.current = setInterval(() => setBannerIdx(i => (i + 1) % BANNERS.length), 4000);
+    return () => clearInterval(bannerTimer.current);
   }, []);
 
-  const fetchProducts = async () => {
-    try { const res = await api.get('/products'); setAllProducts(res.data); }
-    catch (e) {} finally { setLoading(false); }
-  };
-
-  const fetchFeaturedProducts = async () => {
-    try { const res = await api.get('/products/featured'); setFeaturedProducts(res.data); }
-    catch (e) {}
-  };
+  useEffect(() => {
+    api.get('/products').then(r => setAllProducts(r.data)).catch(() => {}).finally(() => setLoading(false));
+    api.get('/products/featured').then(r => setFeaturedProducts(r.data)).catch(() => {});
+  }, []);
 
   const handleAddToCart = async (product) => {
     if (!localStorage.getItem('token')) { navigate('/login'); return; }
@@ -69,294 +115,304 @@ const Home = () => {
     }
   };
 
-  const ProductCard = ({ product }) => (
+  const goToBanner = (i) => {
+    clearInterval(bannerTimer.current);
+    setBannerIdx(i);
+    bannerTimer.current = setInterval(() => setBannerIdx(j => (j + 1) % BANNERS.length), 4000);
+  };
+
+  const filteredProducts = activeCategory === 'All'
+    ? allProducts
+    : allProducts.filter(p => p.category === activeCategory);
+
+  const ProductCard = ({ product, index }) => (
     <Card sx={{
       height: '100%', display: 'flex', flexDirection: 'column',
-      borderRadius: 3, border: '1px solid #E0E7FF',
-      boxShadow: '0 2px 12px rgba(79,70,229,0.07)',
-      transition: 'all 0.25s ease', backgroundColor: 'white',
-      '&:hover': { transform: 'translateY(-6px)', boxShadow: '0 16px 40px rgba(79,70,229,0.15)', borderColor: '#A5B4FC' }
+      borderRadius: 2, border: '1px solid #E0E7FF', backgroundColor: 'white',
+      boxShadow: '0 1px 8px rgba(79,70,229,0.06)',
+      transition: 'all 0.22s ease',
+      animation: `fadeUp 0.35s ease ${Math.min(index, 8) * 0.05}s both`,
+      '@keyframes fadeUp': {
+        from: { opacity: 0, transform: 'translateY(16px)' },
+        to: { opacity: 1, transform: 'translateY(0)' },
+      },
+      '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 28px rgba(79,70,229,0.14)', borderColor: '#A5B4FC' },
     }}>
       <Box sx={{ position: 'relative', overflow: 'hidden' }}>
-        <CardMedia component="img" height="200"
-          image={getImageUrl(product.image_url)} alt={product.name}
-          sx={{ objectFit: 'cover', cursor: 'pointer', transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)' } }}
+        <CardMedia component="img"
+          image={getImageUrl(product.image_url) || NO_IMG} alt={product.name}
+          sx={{
+            height: { xs: 220, sm: 200, md: 210 }, objectFit: 'cover', objectPosition: 'center top', cursor: 'pointer',
+            transition: 'transform 0.3s', '&:hover': { transform: 'scale(1.05)' },
+          }}
           onClick={() => navigate(`/product/${product.id}`)}
         />
         {product.is_featured && (
           <Box sx={{
-            position: 'absolute', top: 10, left: 10,
+            position: 'absolute', top: 8, left: 8,
             background: 'linear-gradient(135deg,#F59E0B,#EF4444)',
-            borderRadius: 99, px: 1.2, py: 0.3,
-            display: 'flex', alignItems: 'center', gap: 0.4,
+            borderRadius: 99, px: 1, py: 0.2,
+            display: 'flex', alignItems: 'center', gap: 0.3,
           }}>
-            <Star sx={{ fontSize: 12, color: 'white' }} />
-            <Typography sx={{ fontSize: '0.7rem', color: 'white', fontWeight: 700 }}>Featured</Typography>
+            <Star sx={{ fontSize: 10, color: 'white' }} />
+            <Typography sx={{ fontSize: '0.62rem', color: 'white', fontWeight: 700 }}>Featured</Typography>
           </Box>
         )}
       </Box>
-      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700}
-          sx={{ cursor: 'pointer', mb: 0.5, color: '#1F2937', '&:hover': { color: '#4F46E5' } }}
+      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: { xs: 1.2, md: 1.5 }, '&:last-child': { pb: { xs: 1.2, md: 1.5 } } }}>
+        <Typography variant="body2" fontWeight={700} noWrap
+          sx={{ cursor: 'pointer', mb: 0.3, fontSize: { xs: '0.8rem', md: '0.875rem' }, '&:hover': { color: '#4F46E5' } }}
           onClick={() => navigate(`/product/${product.id}`)}>
           {product.name}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1, mb: 1.5, fontSize: '0.82rem' }}>
-          {product.description?.substring(0, 75)}...
+        <Typography variant="caption" color="text.secondary" noWrap sx={{ mb: 1, display: 'block' }}>
+          {product.category}
         </Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-          <Typography variant="h6" fontWeight={800} sx={{ color: '#4F46E5', fontSize: '1.2rem' }}>
-            ₹{product.price}
-          </Typography>
-          <Chip label={product.category} size="small"
-            sx={{ fontSize: '0.7rem', backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: 600, border: 'none' }} />
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="contained" fullWidth size="small"
-            sx={{
-              borderRadius: 2, textTransform: 'none', fontWeight: 700, py: 0.9,
-              backgroundColor: '#4F46E5', color: 'white',
-              '&:hover': { backgroundColor: '#4338CA', boxShadow: '0 4px 15px rgba(79,70,229,0.4)' },
-              boxShadow: 'none',
-            }}
+        <Typography fontWeight={800} sx={{ color: '#4F46E5', fontSize: { xs: '0.95rem', md: '1.05rem' }, mb: 1 }}>
+          ₹{product.price}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 0.8, mt: 'auto' }}>
+          <Button variant="contained" size="small" fullWidth
+            sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, py: 0.6, fontSize: '0.75rem', backgroundColor: '#4F46E5', boxShadow: 'none', '&:hover': { backgroundColor: '#4338CA' } }}
             onClick={() => navigate(`/product/${product.id}`)}>
             Buy Now
           </Button>
-          <Button variant="outlined" size="small"
-            sx={{
-              borderRadius: 2, textTransform: 'none', fontWeight: 700, py: 0.9, minWidth: 44,
-              borderColor: '#4F46E5', color: '#4F46E5', backgroundColor: 'white',
-              '&:hover': { backgroundColor: '#EEF2FF', borderColor: '#4338CA' },
-            }}
-            onClick={() => handleAddToCart(product)}>
-            <ShoppingCart fontSize="small" />
-          </Button>
+          <IconButton size="small" onClick={() => handleAddToCart(product)}
+            sx={{ border: '1px solid #E0E7FF', borderRadius: 1.5, color: '#4F46E5', flexShrink: 0, '&:hover': { backgroundColor: '#EEF2FF' } }}>
+            <ShoppingCart sx={{ fontSize: 15 }} />
+          </IconButton>
         </Box>
       </CardContent>
     </Card>
   );
 
   return (
-    <Box>
-      {/* Hero */}
-      <Box sx={{
-        background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 60%, #8B5CF6 100%)',
-        color: 'white', py: { xs: 10, md: 14 }, textAlign: 'center',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        <Box sx={{ position: 'absolute', top: -80, right: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
-        <Box sx={{ position: 'absolute', bottom: -60, left: -60, width: 220, height: 220, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
+    <Box sx={{ backgroundColor: '#F9FAFB' }}>
 
-        <Container maxWidth="md" sx={{ position: 'relative' }}>
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, mb: 3, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 99, px: 2, py: 0.8, backdropFilter: 'blur(10px)' }}>
-            <StorefrontOutlined sx={{ fontSize: 18 }} />
-            <Typography variant="body2" fontWeight={600}>India's #1 Campus Marketplace</Typography>
-          </Box>
-
-          <Typography variant="h2" fontWeight={900} sx={{ fontSize: { xs: '2.2rem', md: '3.5rem' }, lineHeight: 1.15, mb: 2 }}>
-            Buy &amp; Sell Within<br />
-            <span style={{ background: 'linear-gradient(90deg,#A5F3FC,#C4B5FD)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Your Campus
-            </span>
-          </Typography>
-          <Typography variant="h6" sx={{ mb: 4, opacity: 0.88, fontWeight: 400, maxWidth: 520, mx: 'auto', fontSize: { xs: '1rem', md: '1.15rem' } }}>
-            Fast, Safe &amp; Trusted — the smartest way for students to trade second-hand essentials.
-          </Typography>
-
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Button variant="contained" size="large" endIcon={<StorefrontOutlined />}
+      {/* ── Horizontal Category Bar ── */}
+      <Box sx={{ backgroundColor: 'white', borderBottom: '1px solid #EEF2FF', position: 'sticky', top: { xs: 56, md: 64 }, zIndex: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <Box sx={{ display: 'flex', overflowX: 'auto', scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' }, maxWidth: 1200, mx: 'auto' }}>
+          {CATEGORIES.map(cat => (
+            <Box key={cat.name} onClick={() => { setActiveCategory(cat.name); if (cat.name !== 'All') document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' }); }}
               sx={{
-                backgroundColor: 'white', color: '#4F46E5', fontWeight: 800,
-                px: 4, py: 1.5, borderRadius: 3, fontSize: '1rem', textTransform: 'none',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
-                '&:hover': { backgroundColor: '#EEF2FF', transform: 'translateY(-2px)', boxShadow: '0 12px 35px rgba(0,0,0,0.25)' },
-                transition: 'all 0.2s',
-              }}
-              onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
-              Start Shopping
-            </Button>
-            <Button variant="outlined" size="large" endIcon={<ArrowForward />}
-              sx={{
-                borderColor: 'white', color: 'white', fontWeight: 700,
-                px: 4, py: 1.5, borderRadius: 3, fontSize: '1rem', textTransform: 'none',
-                '&:hover': { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'white' },
-              }}
-              onClick={() => navigate('/register')}>
-              Join Free
-            </Button>
-          </Box>
-        </Container>
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5,
+                px: { xs: 1.8, md: 2.5 }, py: { xs: 1, md: 1.5 }, cursor: 'pointer', flexShrink: 0,
+                borderBottom: activeCategory === cat.name ? '3px solid #4F46E5' : '3px solid transparent',
+                transition: 'all 0.18s',
+                '&:hover': { backgroundColor: '#F9FAFB' },
+              }}>
+              {cat.image ? (
+                <Box component="img" src={cat.image} alt={cat.name}
+                  sx={{ width: { xs: 26, md: 34 }, height: { xs: 26, md: 34 }, objectFit: 'cover', borderRadius: 1 }}
+                />
+              ) : (
+                <StorefrontOutlined sx={{ fontSize: { xs: 24, md: 30 }, color: activeCategory === cat.name ? '#4F46E5' : '#6B7280' }} />
+              )}
+              <Typography variant="caption" fontWeight={activeCategory === cat.name ? 700 : 500}
+                sx={{ color: activeCategory === cat.name ? '#4F46E5' : '#6B7280', fontSize: { xs: '0.62rem', md: '0.72rem' }, whiteSpace: 'nowrap' }}>
+                {cat.name}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
       </Box>
 
-      {/* Categories */}
-      <Container maxWidth="lg" sx={{ py: 7 }}>
-        <Box id="categories-section" sx={{ textAlign: 'center', mb: 5 }}>
-          <Chip label="Browse by Category" sx={{ mb: 1.5, backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: 700 }} />
-          <Typography variant="h4" fontWeight={800} sx={{ color: '#1F2937' }}>Shop by Categories</Typography>
-        </Box>
-        <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }}>
-          {categories.map(cat => (
-            <Grid size={{ xs: 3, sm: 3, md: 2 }} key={cat.name}>
-              <Paper elevation={0} onClick={() => { setSelectedCategoryData(cat); setPopupOpen(true); }}
-                sx={{
-                  p: { xs: 1.5, md: 2 }, textAlign: 'center', cursor: 'pointer', borderRadius: 3,
-                  border: '2px solid #E0E7FF', backgroundColor: 'white', transition: 'all 0.25s',
-                  '&:hover': { borderColor: '#4F46E5', backgroundColor: '#EEF2FF', transform: 'translateY(-4px)', boxShadow: '0 8px 24px rgba(79,70,229,0.15)' }
-                }}>
-                <Box component="img" src={cat.image} alt={cat.name}
-                  onError={e => { e.target.src = `https://via.placeholder.com/100x100?text=${encodeURIComponent(cat.name)}`; }}
-                  sx={{ width: { xs: 52, sm: 70, md: 88 }, height: { xs: 52, sm: 70, md: 88 }, objectFit: 'cover', borderRadius: 2, mb: 1 }}
-                />
-                <Typography variant="caption" fontWeight={700} sx={{ color: '#374151', fontSize: { xs: '0.68rem', sm: '0.8rem' }, display: 'block' }}>
-                  {cat.name}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
+      {/* ── Image Banner Slider ── */}
+      <Box sx={{ position: 'relative', overflow: 'hidden', height: { xs: 200, sm: 280, md: 380 }, backgroundColor: '#1F2937' }}>
+        {BANNERS.map((b, i) => (
+          <Box key={i} sx={{
+            position: 'absolute', inset: 0,
+            transition: 'opacity 0.6s ease, transform 0.6s ease',
+            opacity: bannerIdx === i ? 1 : 0,
+            transform: bannerIdx === i ? 'scale(1)' : 'scale(1.03)',
+            pointerEvents: bannerIdx === i ? 'auto' : 'none',
+            background: b.bg,
+          }}>
+            {/* Pattern overlay */}
+            <Box sx={{ position: 'absolute', inset: 0, background: b.pattern }} />
 
-      {/* Featured Products */}
-      {featuredProducts.length > 0 && (
-        <Box sx={{ backgroundColor: '#F5F3FF', py: 7 }}>
-          <Container maxWidth="lg">
-            <Box sx={{ textAlign: 'center', mb: 5 }}>
-              <Chip label="Hand-picked for you" sx={{ mb: 1.5, backgroundColor: '#EDE9FE', color: '#7C3AED', fontWeight: 700 }} />
-              <Typography variant="h4" fontWeight={800} sx={{ color: '#1F2937' }}>Featured Products</Typography>
+            {/* Decorative circles */}
+            <Box sx={{ position: 'absolute', right: -40, top: -40, width: { xs: 180, md: 280 }, height: { xs: 180, md: 280 }, borderRadius: '50%', border: `2px solid ${b.accent}30` }} />
+            <Box sx={{ position: 'absolute', right: 20, top: 20, width: { xs: 120, md: 200 }, height: { xs: 120, md: 200 }, borderRadius: '50%', border: `2px solid ${b.accent}20` }} />
+
+            {/* Big emoji on right */}
+            <Box sx={{
+              position: 'absolute', right: { xs: 16, md: 80 }, top: '50%', transform: 'translateY(-50%)',
+              fontSize: { xs: '5rem', md: '9rem' }, lineHeight: 1,
+              filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.4))',
+              userSelect: 'none',
+            }}>
+              {b.emoji}
             </Box>
-            <Grid container spacing={3}>
-              {featuredProducts.slice(0, 4).map(p => (
-                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={p.id}>
-                  <ProductCard product={p} />
+
+            {/* Text content */}
+            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', pl: { xs: 3, md: 7 } }}>
+              <Box sx={{ maxWidth: { xs: '65%', md: '55%' } }}>
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', backgroundColor: b.accent, borderRadius: 99, px: 1.5, py: 0.4, mb: { xs: 1.5, md: 2 } }}>
+                  <Typography sx={{ fontSize: { xs: '0.65rem', md: '0.75rem' }, color: 'white', fontWeight: 800, letterSpacing: 0.5 }}>
+                    {b.tag.toUpperCase()}
+                  </Typography>
+                </Box>
+                <Typography fontWeight={900} sx={{
+                  color: 'white', lineHeight: 1.1, mb: { xs: 0.8, md: 1.2 },
+                  fontSize: { xs: '1.6rem', sm: '2.2rem', md: '3rem' },
+                  textShadow: '0 2px 12px rgba(0,0,0,0.4)',
+                }}>
+                  {b.title}
+                </Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.8)', mb: { xs: 0.5, md: 0.8 }, fontSize: { xs: '0.8rem', md: '1rem' } }}>
+                  {b.sub}
+                </Typography>
+                <Typography fontWeight={800} sx={{ color: b.accent, fontSize: { xs: '1rem', md: '1.3rem' }, mb: { xs: 1.5, md: 2.5 } }}>
+                  {b.price}
+                </Typography>
+                <Button variant="contained" size="small"
+                  sx={{ backgroundColor: b.accent, color: 'white', fontWeight: 800, borderRadius: 2, px: { xs: 2.5, md: 4 }, py: { xs: 0.8, md: 1.2 }, textTransform: 'none', fontSize: { xs: '0.8rem', md: '0.95rem' }, boxShadow: `0 4px 20px ${b.accent}60`, '&:hover': { filter: 'brightness(1.15)' } }}
+                  onClick={() => { setActiveCategory(b.category); document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                  {b.cta} →
+                </Button>
+              </Box>
+            </Box>
+          </Box>
+        ))}
+
+        {/* Arrows */}
+        <IconButton onClick={() => goToBanner((bannerIdx - 1 + BANNERS.length) % BANNERS.length)}
+          sx={{ position: 'absolute', left: { xs: 6, md: 12 }, top: '50%', transform: 'translateY(-50%)', color: 'white', backgroundColor: 'rgba(0,0,0,0.3)', '&:hover': { backgroundColor: 'rgba(0,0,0,0.55)' }, p: { xs: 0.5, md: 1 } }}>
+          <ChevronLeft />
+        </IconButton>
+        <IconButton onClick={() => goToBanner((bannerIdx + 1) % BANNERS.length)}
+          sx={{ position: 'absolute', right: { xs: 6, md: 12 }, top: '50%', transform: 'translateY(-50%)', color: 'white', backgroundColor: 'rgba(0,0,0,0.3)', '&:hover': { backgroundColor: 'rgba(0,0,0,0.55)' }, p: { xs: 0.5, md: 1 } }}>
+          <ChevronRight />
+        </IconButton>
+
+        {/* Dots */}
+        <Box sx={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 0.8 }}>
+          {BANNERS.map((_, i) => (
+            <Box key={i} onClick={() => goToBanner(i)} sx={{
+              width: bannerIdx === i ? 22 : 8, height: 8, borderRadius: 99,
+              backgroundColor: 'white', opacity: bannerIdx === i ? 1 : 0.5,
+              cursor: 'pointer', transition: 'all 0.3s',
+            }} />
+          ))}
+        </Box>
+      </Box>
+
+      <Container maxWidth="lg" sx={{ py: { xs: 2.5, md: 4 }, px: { xs: 1.5, md: 3 } }}>
+
+        {/* ── Featured Products horizontal scroll ── */}
+        {featuredProducts.length > 0 && (
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Chip label="Hand-picked" size="small" sx={{ backgroundColor: '#EDE9FE', color: '#7C3AED', fontWeight: 700 }} />
+                <Typography variant="h6" fontWeight={800} sx={{ color: '#1F2937', fontSize: { xs: '1rem', md: '1.15rem' } }}>Featured Products</Typography>
+              </Box>
+              <Button size="small" endIcon={<ArrowForward sx={{ fontSize: 14 }} />}
+                sx={{ textTransform: 'none', color: '#4F46E5', fontWeight: 600, fontSize: '0.8rem' }}
+                onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                See all
+              </Button>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' }, scrollSnapType: 'x mandatory' }}>
+              {featuredProducts.map((p, i) => (
+                <Box key={p.id} sx={{ minWidth: { xs: 155, sm: 190, md: 210 }, maxWidth: { xs: 155, sm: 190, md: 210 }, flexShrink: 0, scrollSnapAlign: 'start' }}>
+                  <ProductCard product={p} index={i} />
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {/* ── All / Filtered Products Grid ── */}
+        <Box id="products-section">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="h6" fontWeight={800} sx={{ color: '#1F2937', fontSize: { xs: '1rem', md: '1.15rem' } }}>
+                {activeCategory === 'All' ? 'All Products' : activeCategory}
+              </Typography>
+              {activeCategory !== 'All' && (
+                <Button size="small" onClick={() => setActiveCategory('All')}
+                  sx={{ textTransform: 'none', color: '#6B7280', fontSize: '0.72rem', minWidth: 0, p: 0.5 }}>
+                  ✕ Clear
+                </Button>
+              )}
+            </Box>
+            <Typography variant="caption" color="text.secondary">{filteredProducts.length} items</Typography>
+          </Box>
+
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+          ) : filteredProducts.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <Typography color="text.secondary">No products found</Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={{ xs: 1.5, sm: 2, md: 2.5 }}>
+              {filteredProducts.map((p, i) => (
+                <Grid size={{ xs: 12, sm: 4, md: 3, lg: 3 }} key={p.id}>
+                  <ProductCard product={p} index={i} />
                 </Grid>
               ))}
             </Grid>
-          </Container>
+          )}
         </Box>
-      )}
 
-      {/* All Products */}
-      <Container maxWidth="lg" sx={{ py: 7 }} id="products-section">
-        <Box sx={{ textAlign: 'center', mb: 5 }}>
-          <Chip label="Fresh listings" sx={{ mb: 1.5, backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: 700 }} />
-          <Typography variant="h4" fontWeight={800} sx={{ color: '#1F2937' }}>All Products</Typography>
+        {/* ── Trust Strip ── */}
+        <Box sx={{ display: 'flex', gap: { xs: 1.5, md: 2 }, mt: 5, flexDirection: { xs: 'column', sm: 'row' } }}>
+          {[
+            { icon: <VerifiedUserIcon sx={{ fontSize: 24, color: 'white' }} />, title: '100% Verified', desc: 'Only verified students', color: '#10B981' },
+            { icon: <SecurityIcon sx={{ fontSize: 24, color: 'white' }} />, title: 'Secure Payments', desc: 'Safe transactions', color: '#4F46E5' },
+            { icon: <LocalOfferIcon sx={{ fontSize: 24, color: 'white' }} />, title: 'Best Prices', desc: 'Unbeatable deals', color: '#8B5CF6' },
+          ].map(t => (
+            <Paper key={t.title} elevation={0} sx={{ flex: 1, p: { xs: 1.5, md: 2 }, borderRadius: 2.5, border: '1px solid #E0E7FF', display: 'flex', alignItems: 'center', gap: 1.5, backgroundColor: 'white' }}>
+              <Box sx={{ width: 40, height: 40, borderRadius: 2, backgroundColor: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {t.icon}
+              </Box>
+              <Box>
+                <Typography variant="body2" fontWeight={700}>{t.title}</Typography>
+                <Typography variant="caption" color="text.secondary">{t.desc}</Typography>
+              </Box>
+            </Paper>
+          ))}
         </Box>
-        {loading ? (
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography color="text.secondary">Loading products...</Typography>
-          </Box>
-        ) : allProducts.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="h6" color="text.secondary">No products found</Typography>
-          </Box>
-        ) : (
-          <Grid container spacing={3}>
-            {allProducts.map(p => (
-              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={p.id}>
-                <ProductCard product={p} />
-              </Grid>
-            ))}
-          </Grid>
-        )}
       </Container>
 
-      {/* Why Trust Us */}
-      <Box sx={{ background: 'linear-gradient(180deg,#F9FAFB 0%,#EEF2FF 100%)', py: 8 }}>
-        <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', mb: 6 }}>
-            <Chip label="Why BuyinGo?" sx={{ mb: 1.5, backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: 700 }} />
-            <Typography variant="h4" fontWeight={800} sx={{ color: '#1F2937', mb: 1 }}>Why Students Trust BuyinGo</Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 520, mx: 'auto' }}>
-              Thousands of students across campuses rely on BuyinGo every day.
-            </Typography>
-          </Box>
-          <Grid container spacing={4}>
-            {TRUST.map(t => (
-              <Grid size={{ xs: 12, md: 4 }} key={t.title}>
-                <Paper elevation={0} sx={{ p: 4, borderRadius: 4, border: '1px solid #E0E7FF', backgroundColor: 'white', textAlign: 'center', transition: 'all 0.25s', '&:hover': { boxShadow: '0 12px 40px rgba(79,70,229,0.12)', transform: 'translateY(-4px)' } }}>
-                  <Box sx={{ width: 64, height: 64, borderRadius: 3, backgroundColor: t.color, display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2.5 }}>
-                    {t.icon}
-                  </Box>
-                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1, color: '#1F2937' }}>{t.title}</Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.7 }}>{t.desc}</Typography>
-                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, backgroundColor: `${t.color}18`, borderRadius: 99, px: 1.5, py: 0.4 }}>
-                    <CheckCircleOutline sx={{ fontSize: 14, color: t.color }} />
-                    <Typography variant="caption" fontWeight={700} sx={{ color: t.color }}>{t.check}</Typography>
-                  </Box>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
-
-      {/* CTA Banner */}
-      <Box sx={{ background: 'linear-gradient(135deg,#4F46E5 0%,#7C3AED 100%)', py: { xs: 7, md: 10 }, textAlign: 'center', color: 'white' }}>
-        <Container maxWidth="md">
-          <Typography variant="h3" fontWeight={900} sx={{ mb: 2, fontSize: { xs: '1.8rem', md: '2.5rem' } }}>
+      {/* ── CTA ── */}
+      <Box sx={{ background: 'linear-gradient(135deg,#4F46E5 0%,#7C3AED 100%)', py: { xs: 5, md: 7 }, textAlign: 'center', color: 'white' }}>
+        <Container maxWidth="sm">
+          <Typography variant="h5" fontWeight={900} sx={{ mb: 1.5, fontSize: { xs: '1.4rem', md: '1.8rem' } }}>
             Ready to Buy or Sell?
           </Typography>
-          <Typography variant="h6" sx={{ mb: 4, opacity: 0.88, fontWeight: 400, maxWidth: 500, mx: 'auto' }}>
+          <Typography sx={{ mb: 3, opacity: 0.88, fontSize: { xs: '0.9rem', md: '1rem' } }}>
             Join thousands of students already saving money on BuyinGo.
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Button variant="contained" size="large" onClick={() => navigate('/register')} endIcon={<ArrowForward />}
-              sx={{
-                backgroundColor: 'white', color: '#4F46E5', fontWeight: 800,
-                px: 5, py: 1.5, borderRadius: 3, textTransform: 'none', fontSize: '1rem',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
-                '&:hover': { backgroundColor: '#EEF2FF', transform: 'translateY(-2px)' },
-                transition: 'all 0.2s',
-              }}>
+            <Button variant="contained" onClick={() => navigate('/register')} endIcon={<ArrowForward />}
+              sx={{ backgroundColor: 'white', color: '#4F46E5', fontWeight: 800, px: 3.5, py: 1.2, borderRadius: 2.5, textTransform: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', '&:hover': { backgroundColor: '#EEF2FF' } }}>
               Create Free Account
             </Button>
-            <Button variant="outlined" size="large" onClick={() => navigate('/login')}
-              sx={{
-                borderColor: 'white', color: 'white', fontWeight: 700,
-                px: 5, py: 1.5, borderRadius: 3, textTransform: 'none', fontSize: '1rem',
-                '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'white' },
-              }}>
+            <Button variant="outlined" onClick={() => navigate('/login')}
+              sx={{ borderColor: 'white', color: 'white', fontWeight: 700, px: 3.5, py: 1.2, borderRadius: 2.5, textTransform: 'none', '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)' } }}>
               Sign In
             </Button>
           </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, mt: 4, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2.5, flexWrap: 'wrap' }}>
             {['100% Secure', 'Student Verified', 'Free to Join'].map(t => (
-              <Box key={t} sx={{ display: 'flex', alignItems: 'center', gap: 0.6, opacity: 0.9 }}>
-                <CheckCircleOutline sx={{ fontSize: 16, color: '#A5F3FC' }} />
-                <Typography variant="body2">{t}</Typography>
+              <Box key={t} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, opacity: 0.88 }}>
+                <CheckCircleOutline sx={{ fontSize: 14, color: '#A5F3FC' }} />
+                <Typography variant="caption">{t}</Typography>
               </Box>
             ))}
           </Box>
         </Container>
       </Box>
 
-      {/* Category Dialog */}
-      <Dialog open={popupOpen} onClose={() => setPopupOpen(false)} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
-        <DialogTitle sx={{ textAlign: 'center', pb: 0 }}>
-          <IconButton onClick={() => setPopupOpen(false)} sx={{ position: 'absolute', right: 8, top: 8 }}><Close /></IconButton>
-          {selectedCategoryData && (
-            <Box>
-              <Box component="img" src={selectedCategoryData.image} alt={selectedCategoryData.name}
-                sx={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 3, mx: 'auto', mb: 1.5, display: 'block', boxShadow: '0 4px 20px rgba(79,70,229,0.2)' }} />
-              <Typography variant="h6" fontWeight={700}>{selectedCategoryData.name}</Typography>
-            </Box>
-          )}
-        </DialogTitle>
-        <DialogContent sx={{ textAlign: 'center', py: 1 }}>
-          <Typography variant="body2" color="text.secondary">Browse all {selectedCategoryData?.name} products</Typography>
-        </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
-          <Button variant="contained" size="large" endIcon={<ArrowForward />}
-            sx={{ px: 5, borderRadius: 3, textTransform: 'none', fontWeight: 700, backgroundColor: '#4F46E5', color: 'white', boxShadow: 'none', '&:hover': { backgroundColor: '#4338CA' } }}
-            onClick={() => { navigate(`/category/${encodeURIComponent(selectedCategoryData.name.toLowerCase())}`); setPopupOpen(false); }}>
-            Browse {selectedCategoryData?.name}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} sx={{ borderRadius: 2, fontWeight: 600 }}>{toast.message}</Alert>
+      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} sx={{ borderRadius: 2, fontWeight: 600 }}>
+          {toast.message}
+        </Alert>
       </Snackbar>
     </Box>
   );

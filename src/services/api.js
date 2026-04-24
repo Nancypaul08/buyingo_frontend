@@ -10,9 +10,8 @@ const api = axios.create({
 
 // Helper function to get full image URL
 export const getImageUrl = (imagePath) => {
-  if (!imagePath) return 'https://via.placeholder.com/300x200?text=No+Image';
+  if (!imagePath) return null;
   if (imagePath.startsWith('http')) return imagePath;
-  // In production, image paths should be absolute or relative to the API
   if (!config.API_BASE_URL) return imagePath;
   return `${config.API_BASE_URL}${imagePath}`;
 };
