@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { ArrowBack, ShoppingCart } from '@mui/icons-material';
 import { getImageUrl } from '../services/api';
+import config from '../config';
 
 const SearchResults = () => {
   const location = useLocation();
@@ -39,13 +40,12 @@ const SearchResults = () => {
   const performSearch = async (query) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5001/api/products/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`${config.API_BASE_URL}/api/products/search?q=${encodeURIComponent(query)}`);
       if (response.ok) {
         const searchResults = await response.json();
         setProducts(searchResults);
       } else {
-        // Fallback to client-side search if API endpoint doesn't exist
-        const allResponse = await fetch(`http://localhost:5001/api/products`);
+        const allResponse = await fetch(`${config.API_BASE_URL}/api/products`);
         const allProducts = await allResponse.json();
         
         const searchTerms = query.toLowerCase().split(' ');
@@ -70,7 +70,7 @@ const SearchResults = () => {
   const performCategorySearch = async (category) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5001/api/products`);
+      const response = await fetch(`${config.API_BASE_URL}/api/products`);
       const allProducts = await response.json();
       
       const filteredProducts = allProducts.filter(product => 

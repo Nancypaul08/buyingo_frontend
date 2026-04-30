@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { ArrowBack, ShoppingCart } from '@mui/icons-material';
 import { getImageUrl } from '../services/api';
+import config from '../config';
 
 const CategoryProducts = () => {
   const { category } = useParams();
@@ -30,13 +31,12 @@ const CategoryProducts = () => {
   const fetchCategoryProducts = async (categoryName) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5001/api/products/category/${encodeURIComponent(categoryName)}`);
+      const response = await fetch(`${config.API_BASE_URL}/api/products/category/${encodeURIComponent(categoryName)}`);
       if (response.ok) {
         const categoryProducts = await response.json();
         setProducts(categoryProducts);
       } else {
-        // Fallback to filtering all products
-        const allResponse = await fetch(`http://localhost:5001/api/products`);
+        const allResponse = await fetch(`${config.API_BASE_URL}/api/products`);
         const allProducts = await allResponse.json();
         
         const filteredProducts = allProducts.filter(product => 
