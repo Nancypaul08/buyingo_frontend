@@ -7,13 +7,19 @@ import {
   DialogContent, DialogActions, TextField, InputLabel,
   Snackbar, Alert,
 } from '@mui/material';
-import { Add, Star, StarBorder, Edit, Delete } from '@mui/icons-material';
+import { Add, Star, StarBorder, Edit, Delete, Search } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 const CATEGORIES = [
-  'Air Cooler','Water Bottles','Coffee Mugs','Buckets','Pillows',
-  'LED Lights','Routers','Mattresses','Formal Suits','Formal Shoes','Hangers','Soft Toys',
+  'Air Cooler', 'LED Lights', 'Routers', 'Fan', 'Heater', 'Iron Box',
+  'Mattresses', 'Pillows', 'Bedsheet', 'Curtains', 'Study Table', 'Chair',
+  'Water Bottles', 'Coffee Mugs', 'Buckets', 'Utensils', 'Lunch Box',
+  'Formal Suits', 'Formal Shoes', 'Hangers', 'Shirts', 'T-Shirts',
+  'Jeans', 'Trousers', 'Kurta', 'Saree', 'Jacket', 'Sweater',
+  'Accessories', 'Bags', 'Watches', 'Sunglasses', 'Belts', 'Wallets',
+  'Soft Toys', 'Books', 'Stationery', 'Sports Equipment', 'Gym Equipment',
+  'Other',
 ];
 
 const AdminPanel = () => {
@@ -26,7 +32,13 @@ const AdminPanel = () => {
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+  const [userSearch, setUserSearch] = useState('');
   const navigate = useNavigate();
+
+  const filteredUsers = users.filter(u => {
+    const q = userSearch.toLowerCase();
+    return !q || u.full_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.contact_number.includes(q);
+  });
 
   const showToast = (msg, sev = 'success') => setToast({ open: true, message: msg, severity: sev });
 
@@ -229,44 +241,57 @@ const AdminPanel = () => {
       )}
 
       {activeTab === 1 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Contact</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Joined</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.full_name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.contact_number}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.is_verified ? 'Verified' : 'Unverified'}
-                      color={user.is_verified ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.is_admin ? 'Admin' : 'Student'}
-                      color={user.is_admin ? 'primary' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{formatDate(user.created_at)}</TableCell>
+        <Box>
+          <Box sx={{ mb: 2 }}>
+            <TextField
+              fullWidth
+              placeholder="Search by name, email or contact..."
+              value={userSearch}
+              onChange={e => setUserSearch(e.target.value)}
+              size="small"
+              InputProps={{
+                startAdornment: (
+                  <Box component="span" sx={{ mr: 1, color: '#9CA3AF', display: 'flex' }}>
+                    <Search fontSize="small" />
+                  </Box>
+                ),
+              }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#F9FAFB' } }}
+            />
+          </Box>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Contact</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Joined</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {filteredUsers.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} align="center" sx={{ py: 4, color: '#9CA3AF' }}>No users found</TableCell></TableRow>
+                ) : filteredUsers.map((user) => (
+                  <TableRow key={user.id} sx={{ '&:hover': { backgroundColor: '#F9FAFB' } }}>
+                    <TableCell fontWeight={600}>{user.full_name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.contact_number}</TableCell>
+                    <TableCell>
+                      <Chip label={user.is_verified ? 'Verified' : 'Unverified'} color={user.is_verified ? 'success' : 'warning'} size="small" />
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={user.is_admin ? 'Admin' : 'Student'} color={user.is_admin ? 'primary' : 'default'} size="small" />
+                    </TableCell>
+                    <TableCell>{formatDate(user.created_at)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
       )}
 
       {activeTab === 2 && (

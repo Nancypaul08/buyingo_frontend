@@ -3,15 +3,28 @@ import {
   Container, Paper, Typography, TextField, Button, Box,
   FormControl, InputLabel, Select, MenuItem, Chip,
   CircularProgress, Snackbar, Alert, Divider, IconButton,
+  InputAdornment, ListSubheader,
 } from '@mui/material';
-import { Add, Close, CloudUpload, AddPhotoAlternate } from '@mui/icons-material';
+import { Add, Close, CloudUpload, AddPhotoAlternate, Search } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 const CATEGORIES = [
-  'Air Cooler', 'Water Bottles', 'Coffee Mugs', 'Buckets',
-  'Pillows', 'LED Lights', 'Routers', 'Mattresses',
-  'Formal Suits', 'Formal Shoes', 'Hangers', 'Soft Toys',
+  // Appliances & Electronics
+  'Air Cooler', 'LED Lights', 'Routers', 'Fan', 'Heater', 'Iron Box',
+  // Furniture & Bedding
+  'Mattresses', 'Pillows', 'Bedsheet', 'Curtains', 'Study Table', 'Chair',
+  // Kitchen & Dining
+  'Water Bottles', 'Coffee Mugs', 'Buckets', 'Utensils', 'Lunch Box',
+  // Clothing
+  'Formal Suits', 'Formal Shoes', 'Hangers', 'Shirts', 'T-Shirts',
+  'Jeans', 'Trousers', 'Kurta', 'Saree', 'Jacket', 'Sweater',
+  // Accessories
+  'Accessories', 'Bags', 'Watches', 'Sunglasses', 'Belts', 'Wallets',
+  // Lifestyle & Fun
+  'Soft Toys', 'Books', 'Stationery', 'Sports Equipment', 'Gym Equipment',
+  // Other
+  'Other',
 ];
 
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair'];
@@ -40,6 +53,7 @@ const AddProduct = () => {
   const [colors, setColors] = useState([]);
   const [customSize, setCustomSize] = useState('');
   const [customColor, setCustomColor] = useState('');
+  const [categorySearch, setCategorySearch] = useState('');
 
   const showToast = (msg, sev = 'success') => setToast({ open: true, message: msg, severity: sev });
 
@@ -101,8 +115,8 @@ const AddProduct = () => {
         try { await api.post(`/products/${productId}/images`, imgFd, { headers: { 'Content-Type': 'multipart/form-data' } }); } catch {}
       }
 
-      showToast('Product added successfully!');
-      setTimeout(() => navigate('/admin'), 1500);
+      showToast('Product listed successfully! It will appear in the marketplace.');
+      setTimeout(() => navigate('/'), 1500);
     } catch (err) {
       showToast(err.response?.data?.error || 'Error adding product', 'error');
     } finally { setLoading(false); }
@@ -117,8 +131,8 @@ const AddProduct = () => {
       <Paper elevation={0} sx={{ border: '1px solid #E0E7FF', borderRadius: 3, overflow: 'hidden' }}>
         {/* Header */}
         <Box sx={{ background: 'linear-gradient(135deg,#4F46E5,#8B5CF6)', p: 3, color: 'white' }}>
-          <Typography variant="h5" fontWeight={900}>Add New Product</Typography>
-          <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>Fill in the details to list your product</Typography>
+          <Typography variant="h5" fontWeight={900}>Sell Your Product</Typography>
+          <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>List your item — buyers will see it in the marketplace</Typography>
         </Box>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ p: { xs: 2, md: 3 } }}>
@@ -129,16 +143,40 @@ const AddProduct = () => {
             <TextField required fullWidth label="Product Name" name="name" value={form.name} onChange={handleChange}
               sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
             <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-              <TextField required fullWidth label="Price (₹)" name="price" type="number" value={form.price} onChange={handleChange}
-                inputProps={{ min: 0 }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+              <TextField required fullWidth label="Your Price (₹)" name="price" type="number" value={form.price} onChange={handleChange}
+                inputProps={{ min: 0 }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                helperText={form.price ? `Buyers will see: ₹${Math.round(parseFloat(form.price) * 1.3)}` : 'Enter your price'}
+                FormHelperTextProps={{ sx: { color: '#10B981', fontWeight: 700 } }}
+              />
               <TextField fullWidth label="Brand (optional)" name="brand" value={form.brand} onChange={handleChange}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
             </Box>
             <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
               <FormControl fullWidth required sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
                 <InputLabel>Category</InputLabel>
-                <Select name="category" value={form.category} label="Category" onChange={handleChange}>
-                  {CATEGORIES.map(c => <MenuItem key={c} value={c}>{c}</MenuItem>)}
+                <Select
+                  name="category" value={form.category} label="Category"
+                  onChange={e => { if (e.target.value !== '__search__') handleChange(e); }}
+                  onClose={() => setCategorySearch('')}
+                  MenuProps={{ PaperProps: { sx: { maxHeight: 320 } } }}
+                >
+                  <ListSubheader sx={{ p: 0, lineHeight: 'normal' }}>
+                    <TextField
+                      size="small" fullWidth autoFocus
+                      placeholder="Search category..."
+                      value={categorySearch}
+                      onChange={e => setCategorySearch(e.target.value)}
+                      onKeyDown={e => e.stopPropagation()}
+                      InputProps={{ startAdornment: <InputAdornment position="start"><Search sx={{ fontSize: 16, color: '#9CA3AF' }} /></InputAdornment> }}
+                      sx={{ px: 1.5, py: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                    />
+                  </ListSubheader>
+                  {CATEGORIES.filter(c => c.toLowerCase().includes(categorySearch.toLowerCase())).map(c => (
+                    <MenuItem key={c} value={c} sx={{ fontWeight: c === 'Other' ? 700 : 400 }}>{c}</MenuItem>
+                  ))}
+                  {CATEGORIES.filter(c => c.toLowerCase().includes(categorySearch.toLowerCase())).length === 0 && (
+                    <MenuItem disabled sx={{ color: '#9CA3AF', fontStyle: 'italic' }}>No categories found</MenuItem>
+                  )}
                 </Select>
               </FormControl>
               <FormControl fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}>
@@ -285,7 +323,7 @@ const AddProduct = () => {
               sx={{ borderRadius: 2, py: 1.5, fontWeight: 800, textTransform: 'none', fontSize: '1rem', backgroundColor: '#4F46E5', '&:hover': { backgroundColor: '#4338CA' }, boxShadow: '0 4px 16px rgba(79,70,229,0.35)' }}>
               {loading ? <CircularProgress size={22} sx={{ color: 'white' }} /> : 'List Product'}
             </Button>
-            <Button variant="outlined" fullWidth size="large" onClick={() => navigate('/admin')}
+            <Button variant="outlined" fullWidth size="large" onClick={() => navigate('/')}
               sx={{ borderRadius: 2, py: 1.5, fontWeight: 700, textTransform: 'none', borderColor: '#E0E7FF', color: '#374151' }}>
               Cancel
             </Button>

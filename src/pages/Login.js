@@ -37,8 +37,13 @@ const Login = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 50%, #FDF4FF 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-      <Box sx={{ width: '100%', maxWidth: 440 }}>
+    <Box sx={{
+      height: '100dvh',
+      background: 'linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 50%, #FDF4FF 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'auto', p: 2,
+    }}>
+      <Box sx={{ width: '100%', maxWidth: 440, my: 'auto' }}>
         {/* Logo */}
         <Box sx={{ textAlign: 'center', mb: 3 }}>
           <Typography sx={{ fontWeight: 900, fontSize: '2.2rem', background: 'linear-gradient(135deg,#4F46E5,#8B5CF6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>

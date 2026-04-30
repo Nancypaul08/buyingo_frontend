@@ -189,6 +189,13 @@ const ProductDetail = () => {
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [activeImg, setActiveImg] = useState(0);
   const [wishlisted, setWishlisted] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      const wl = JSON.parse(localStorage.getItem('wishlist') || '[]');
+      setWishlisted(wl.includes(parseInt(id)));
+    }
+  }, [id]);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -230,7 +237,16 @@ const ProductDetail = () => {
   const nextImg = () => setActiveImg(i => (i + 1) % allImages.length);
 
   const handleWishlist = () => {
-    setWishlisted(w => !w);
+    const wl = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    let updated;
+    if (wishlisted) {
+      updated = wl.filter(wid => wid !== product.id);
+    } else {
+      updated = [...wl, product.id];
+    }
+    localStorage.setItem('wishlist', JSON.stringify(updated));
+    setWishlisted(!wishlisted);
+    window.dispatchEvent(new Event('wishlistUpdated'));
     showToast(wishlisted ? 'Removed from wishlist' : 'Added to wishlist!', wishlisted ? 'info' : 'success');
   };
 
@@ -510,12 +526,12 @@ const ProductDetail = () => {
           {/* Seller */}
           <Box>
             <Typography variant="body2" fontWeight={800} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.8rem', mb: 1.5 }}>Seller Information</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ width: 40, height: 40, borderRadius: '50%', backgroundColor: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Typography fontWeight={800} sx={{ color: '#4F46E5' }}>{product.seller?.full_name?.[0]?.toUpperCase() || 'S'}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2, backgroundColor: '#EEF2FF', borderRadius: 2 }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#4F46E5,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Typography fontWeight={900} sx={{ color: 'white', fontSize: '1.1rem' }}>{product.seller?.full_name?.[0]?.toUpperCase() || 'S'}</Typography>
               </Box>
               <Box>
-                <Typography variant="body2" fontWeight={700}>{product.seller?.full_name || 'N/A'}</Typography>
+                <Typography variant="body1" fontWeight={800} sx={{ color: '#1F2937' }}>{product.seller?.full_name || 'Unknown Seller'}</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <CheckCircle sx={{ fontSize: 13, color: '#10B981' }} />
                   <Typography variant="caption" color="text.secondary">Verified Student Seller</Typography>

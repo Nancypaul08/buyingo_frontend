@@ -5,37 +5,44 @@ import {
   ListItemText, ListItemIcon, Divider, Avatar,
 } from '@mui/material';
 import {
-  ShoppingCart, Search, Person, Menu as MenuIcon, Close, Home,
-  Info, Login, Logout, AdminPanelSettings, Store,
+  ShoppingCart, Search, Menu as MenuIcon, Close, Home,
+  Info, Login, Logout, AdminPanelSettings, Store, Favorite,
 } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+
+const getWishlistCount = () => {
+  try { return JSON.parse(localStorage.getItem('wishlist') || '[]').length; } catch { return 0; }
+};
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(getWishlistCount());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) fetchCartCount();
+    setWishlistCount(getWishlistCount());
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // Re-fetch cart count whenever any page fires 'cartUpdated'
-    const onCartUpdate = () => fetchCartCount();
-    window.addEventListener('cartUpdated', onCartUpdate);
-    return () => window.removeEventListener('cartUpdated', onCartUpdate);
-  }, []);
-
-  useEffect(() => {
+    const onCart = () => fetchCartCount();
+    const onWishlist = () => setWishlistCount(getWishlistCount());
     const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('cartUpdated', onCart);
+    window.addEventListener('wishlistUpdated', onWishlist);
     window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('cartUpdated', onCart);
+      window.removeEventListener('wishlistUpdated', onWishlist);
+      window.removeEventListener('scroll', onScroll);
+    };
   }, []);
 
   const fetchCartCount = async () => {
@@ -59,7 +66,7 @@ const Navbar = () => {
     }}>
       <Container maxWidth="lg">
         <Toolbar sx={{ py: 0.5, gap: 2 }}>
-          {/* Mobile menu */}
+          {/* Mobile menu button */}
           <IconButton sx={{ display: { xs: 'flex', md: 'none' }, color: '#4F46E5' }} onClick={() => setMobileMenuOpen(true)}>
             <MenuIcon />
           </IconButton>
@@ -74,7 +81,7 @@ const Navbar = () => {
             BuyinGo
           </Typography>
 
-          {/* Search */}
+          {/* Search bar */}
           <Box component="form" onSubmit={handleSearch} sx={{ flexGrow: 1, maxWidth: 420, display: { xs: 'none', md: 'block' } }}>
             <TextField fullWidth size="small" placeholder="Search products, categories..."
               value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
@@ -99,7 +106,7 @@ const Navbar = () => {
               }}>{item.label}</Button>
             ))}
 
-            {isAuthenticated && user?.is_admin && (
+            {isAuthenticated && (
               <Button component={Link} to="/sell" sx={{
                 color: '#374151', textTransform: 'none', fontWeight: 600, borderRadius: 2, px: 2,
                 '&:hover': { backgroundColor: '#EEF2FF', color: '#4F46E5' }
@@ -108,6 +115,11 @@ const Navbar = () => {
 
             {isAuthenticated ? (
               <>
+                <IconButton component={Link} to="/wishlist" sx={{ color: '#EF4444' }}>
+                  <Badge badgeContent={wishlistCount || null} color="error">
+                    <Favorite />
+                  </Badge>
+                </IconButton>
                 <IconButton component={Link} to="/cart" sx={{ color: '#4F46E5' }}>
                   <Badge badgeContent={cartCount} color="secondary">
                     <ShoppingCart />
@@ -131,6 +143,7 @@ const Navbar = () => {
                   </MenuItem>
                   <Divider />
                   <MenuItem component={Link} to="/orders" onClick={() => setAnchorEl(null)}>My Orders</MenuItem>
+                  <MenuItem component={Link} to="/wishlist" onClick={() => setAnchorEl(null)}>My Wishlist</MenuItem>
                   <MenuItem onClick={handleLogout} sx={{ color: '#EF4444' }}>Logout</MenuItem>
                 </Menu>
               </>
@@ -154,6 +167,9 @@ const Navbar = () => {
           <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 0.5 }}>
             {isAuthenticated ? (
               <>
+                <IconButton component={Link} to="/wishlist" sx={{ color: '#EF4444' }}>
+                  <Badge badgeContent={wishlistCount || null} color="error"><Favorite /></Badge>
+                </IconButton>
                 <IconButton component={Link} to="/cart" sx={{ color: '#4F46E5' }}>
                   <Badge badgeContent={cartCount} color="secondary"><ShoppingCart /></Badge>
                 </IconButton>
@@ -199,6 +215,20 @@ const Navbar = () => {
               <ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: 600 }} />
             </ListItem>
           ))}
+          {isAuthenticated && (
+            <ListItem button onClick={() => { navigate('/sell'); setMobileMenuOpen(false); }}
+              sx={{ borderRadius: 2, mb: 0.5, '&:hover': { backgroundColor: '#EEF2FF' } }}>
+              <ListItemIcon sx={{ color: '#4F46E5', minWidth: 36 }}><Store /></ListItemIcon>
+              <ListItemText primary="Sell Item" primaryTypographyProps={{ fontWeight: 600 }} />
+            </ListItem>
+          )}
+          {isAuthenticated && (
+            <ListItem button onClick={() => { navigate('/wishlist'); setMobileMenuOpen(false); }}
+              sx={{ borderRadius: 2, mb: 0.5, '&:hover': { backgroundColor: '#EEF2FF' } }}>
+              <ListItemIcon sx={{ color: '#EF4444', minWidth: 36 }}><Favorite /></ListItemIcon>
+              <ListItemText primary="My Wishlist" primaryTypographyProps={{ fontWeight: 600 }} />
+            </ListItem>
+          )}
           {isAuthenticated && (
             <ListItem button onClick={() => { navigate('/orders'); setMobileMenuOpen(false); }}
               sx={{ borderRadius: 2, mb: 0.5, '&:hover': { backgroundColor: '#EEF2FF' } }}>

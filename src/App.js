@@ -19,6 +19,7 @@ import About from './pages/About';
 import Checkout from './pages/Checkout';
 import SearchResults from './pages/SearchResults';
 import CategoryProducts from './pages/CategoryProducts';
+import Wishlist from './pages/Wishlist';
 
 // Create theme
 const theme = createTheme({
@@ -86,6 +87,7 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="/category/:category" element={<CategoryProducts />} />
+              <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -133,7 +135,7 @@ function App() {
               <Route 
                 path="/sell" 
                 element={
-                  <ProtectedRoute adminOnly={true}>
+                  <ProtectedRoute>
                     <AddProduct />
                   </ProtectedRoute>
                 } 
