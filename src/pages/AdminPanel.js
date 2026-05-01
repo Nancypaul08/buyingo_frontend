@@ -90,6 +90,7 @@ const AdminPanel = () => {
         condition: editForm.condition,
         sizes: editForm.sizes,
         colors: editForm.colors,
+        image_url: editProduct.image_url,
       });
       showToast('Product updated successfully');
       setEditProduct(null);
@@ -107,6 +108,15 @@ const AdminPanel = () => {
       showToast('Product deleted');
       fetchData();
     } catch { showToast('Failed to delete product', 'error'); }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    try {
+      await api.delete(`/admin/users/${userId}`);
+      showToast('User deleted successfully');
+      fetchData();
+    } catch (err) { showToast(err.response?.data?.error || 'Failed to delete user', 'error'); }
   };
 
   const toggleFeatured = async (productId) => {
@@ -269,6 +279,7 @@ const AdminPanel = () => {
                   <TableCell>Status</TableCell>
                   <TableCell>Role</TableCell>
                   <TableCell>Joined</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -286,6 +297,13 @@ const AdminPanel = () => {
                       <Chip label={user.is_admin ? 'Admin' : 'Student'} color={user.is_admin ? 'primary' : 'default'} size="small" />
                     </TableCell>
                     <TableCell>{formatDate(user.created_at)}</TableCell>
+                    <TableCell>
+                      {!user.is_admin && (
+                        <IconButton size="small" color="error" onClick={() => handleDeleteUser(user.id)}>
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
