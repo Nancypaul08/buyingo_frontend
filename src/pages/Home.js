@@ -128,15 +128,15 @@ const Home = () => {
   const ProductCard = ({ product, index }) => (
     <Card sx={{
       height: '100%', display: 'flex', flexDirection: 'column',
-      borderRadius: 2, border: '1px solid #E0E7FF', backgroundColor: 'white',
-      boxShadow: '0 1px 8px rgba(79,70,229,0.06)',
+      borderRadius: 3, border: '1px solid #E0E7FF', backgroundColor: 'white',
+      boxShadow: '0 2px 12px rgba(79,70,229,0.09)',
       transition: 'all 0.22s ease',
       animation: `fadeUp 0.35s ease ${Math.min(index, 8) * 0.05}s both`,
       '@keyframes fadeUp': {
         from: { opacity: 0, transform: 'translateY(16px)' },
         to: { opacity: 1, transform: 'translateY(0)' },
       },
-      '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 28px rgba(79,70,229,0.14)', borderColor: '#A5B4FC' },
+      '&:hover': { transform: 'translateY(-5px)', boxShadow: '0 12px 32px rgba(79,70,229,0.18)', borderColor: '#A5B4FC' },
     }}>
       <Box sx={{ position: 'relative', overflow: 'hidden' }}>
         <CardMedia component="img"
@@ -173,12 +173,12 @@ const Home = () => {
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.8, mt: 'auto' }}>
           <Button variant="contained" size="small" fullWidth
-            sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, py: 0.6, fontSize: '0.75rem', backgroundColor: '#4F46E5', boxShadow: 'none', '&:hover': { backgroundColor: '#4338CA' } }}
+            sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, py: 0.7, fontSize: '0.75rem', background: 'linear-gradient(135deg,#4F46E5,#7C3AED)', boxShadow: 'none', '&:hover': { background: 'linear-gradient(135deg,#4338CA,#6D28D9)', boxShadow: '0 4px 12px rgba(79,70,229,0.35)' } }}
             onClick={() => navigate(`/product/${product.id}`)}>
-            Buy Now
+            Chat / Buy
           </Button>
           <IconButton size="small" onClick={() => handleAddToCart(product)}
-            sx={{ border: '1px solid #E0E7FF', borderRadius: 1.5, color: '#4F46E5', flexShrink: 0, '&:hover': { backgroundColor: '#EEF2FF' } }}>
+            sx={{ border: '1.5px solid #E0E7FF', borderRadius: 1.5, color: '#4F46E5', flexShrink: 0, backgroundColor: '#F5F3FF', '&:hover': { backgroundColor: '#EEF2FF', borderColor: '#A5B4FC' } }}>
             <ShoppingCart sx={{ fontSize: 15 }} />
           </IconButton>
         </Box>
