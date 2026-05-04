@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { Add, Star, StarBorder, Edit, Delete, Search } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { getImageUrl } from '../services/api';
 
 const CATEGORIES = [
   'Air Cooler', 'LED Lights', 'Routers', 'Fan', 'Heater', 'Iron Box',
@@ -31,6 +31,8 @@ const AdminPanel = () => {
   const [editProduct, setEditProduct] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
+  const [newImageFile, setNewImageFile] = useState(null);
+  const [newImagePreview, setNewImagePreview] = useState(null);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [userSearch, setUserSearch] = useState('');
   const navigate = useNavigate();
@@ -76,11 +78,42 @@ const AdminPanel = () => {
       sizes: Array.isArray(product.sizes) ? product.sizes.join(', ') : '',
       colors: Array.isArray(product.colors) ? product.colors.join(', ') : '',
     });
+    setNewImageFile(null);
+    setNewImagePreview(null);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setNewImageFile(file);
+    setNewImagePreview(URL.createObjectURL(file));
   };
 
   const handleEditSave = async () => {
     setEditLoading(true);
     try {
+      let image_url = editProduct.image_url;
+
+      if (newImageFile) {
+        const formData = new FormData();
+        formData.append('image', newImageFile);
+        Object.entries({
+          name: editForm.name,
+          description: editForm.description,
+          price: parseFloat(editForm.price),
+          category: editForm.category,
+          brand: editForm.brand,
+          condition: editForm.condition,
+          sizes: editForm.sizes,
+          colors: editForm.colors,
+        }).forEach(([k, v]) => formData.append(k, v));
+
+        const res = await api.put(`/products/${editProduct.id}/image`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        image_url = res.data.image_url;
+      }
+
       await api.put(`/products/${editProduct.id}`, {
         name: editForm.name,
         description: editForm.description,
@@ -90,7 +123,7 @@ const AdminPanel = () => {
         condition: editForm.condition,
         sizes: editForm.sizes,
         colors: editForm.colors,
-        image_url: editProduct.image_url,
+        image_url,
       });
       showToast('Product updated successfully');
       setEditProduct(null);
@@ -424,6 +457,28 @@ const AdminPanel = () => {
             onChange={e => setEditForm({ ...editForm, colors: e.target.value })}
             placeholder="Red, Blue, Green or leave empty"
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }} />
+
+          {/* Image Upload */}
+          <Box>
+            <Typography variant="body2" fontWeight={600} sx={{ mb: 1, color: '#374151' }}>Product Image</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box component="img"
+                src={newImagePreview || getImageUrl(editProduct?.image_url) || ''}
+                alt="product"
+                sx={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 2, border: '1px solid #E0E7FF', flexShrink: 0, backgroundColor: '#F9FAFB' }}
+              />
+              <Button variant="outlined" component="label" size="small"
+                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, borderColor: '#4F46E5', color: '#4F46E5' }}>
+                {newImageFile ? 'Change Image' : 'Upload New Image'}
+                <input type="file" accept="image/*" hidden onChange={handleImageChange} />
+              </Button>
+              {newImageFile && (
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 120 }}>
+                  {newImageFile.name}
+                </Typography>
+              )}
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
           <Button onClick={() => setEditProduct(null)} variant="outlined"
